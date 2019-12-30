@@ -1,0 +1,62 @@
+name: Build Release
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      VERSION: "8.0.1"
+    steps:
+    - uses: actions/checkout@v1
+    - name: windows build
+      shell: bash
+      run: |
+        curl -L https://github.com/llvm/llvm-project/releases/download/llvmorg-${VERSION}/llvm-${VERSION}.src.tar.xz | tar xJf -
+
+        mkdir llvm
+        mkdir llvm_build
+
+        cd llvm_build
+        cmake \
+          -DCMAKE_INSTALL_PREFIX=../llvm \
+          -DCMAKE_BUILD_TYPE=MinSizeRel \
+          -DLLVM_TARGETS_TO_BUILD=host \
+          -DLLVM_USE_CRT_MINSIZEREL=MT \
+          -DLLVM_USE_CRT_RELEASE=MT \
+          -DLLVM_ENABLE_TERMINFO=OFF \
+          -DLLVM_ENABLE_ZLIB=OFF \
+          -DLLVM_INCLUDE_BENCHMARKS=OFF \
+          -DLLVM_INCLUDE_DOCS=OFF \
+          -DLLVM_INCLUDE_EXAMPLES=OFF \
+          -DLLVM_INCLUDE_GO_TESTS=OFF \
+          -DLLVM_INCLUDE_RUNTIMES=OFF \
+          -DLLVM_INCLUDE_TESTS=OFF \
+          -DLLVM_INCLUDE_UTILS=OFF \
+          -DLLVM_BUILD_TOOLS=OFF \
+          -DLLVM_OPTIMIZED_TABLEGEN=ON \
+          ../llvm-${VERSION}.src
+
+        cmake --build . --config MinSizeRel --target install
+        cd ..
+        7z a llvm.7z llvm
+    - name: create release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        tag_name: v${VERSION}
+        release_name: llvm-${VERSION}
+        draft: false
+        prerelease: false
+    - name: upload release asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        upload_url: ${{steps.create_release.outputs.upload_url}}
+        asset_path: ./llvm.7z
+        asset_name: llvm-${version}-x86_64-pc-windows-msvc.7z
+        asset_content_type: application/x-7z-compressed
