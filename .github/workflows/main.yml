@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      VERSION: "10.0.0"
+      VERSION: "11.0.0"
     steps:
     - uses: actions/checkout@v1
     - name: windows build
@@ -46,8 +46,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       with:
-        tag_name: v${VERSION}
-        release_name: llvm-${VERSION}
+        tag_name: v${{env.VERSION}}
+        release_name: llvm-${{env.VERSION}}
         draft: false
         prerelease: false
     - name: upload release asset
@@ -58,5 +58,5 @@ jobs:
       with:
         upload_url: ${{steps.create_release.outputs.upload_url}}
         asset_path: ./llvm.7z
-        asset_name: llvm-${version}-x86_64-pc-windows-msvc.7z
+        asset_name: llvm-${{env.VERSION}}-x86_64-pc-windows-msvc.7z
         asset_content_type: application/x-7z-compressed
